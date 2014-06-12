@@ -3,19 +3,17 @@ library(reshape2)
 ################################################################################
 # load information files to dataframes
 ################################################################################
-setwd("~/Dev/github/Coursera-Getting-and-Cleaning-Data")
 features <- read.table("features.txt", stringsAsFactors=FALSE)
 names(features) <- c("id", "feature")
 activities <- read.table("activity_labels.txt", stringsAsFactors=FALSE)
 names(activities) <- c("id", "activity")
 
 
-
 ################################################################################
 # loading data from train files and make single dataframe
 ################################################################################
-setwd("~/Dev/github/Coursera-Getting-and-Cleaning-Data/train")
-train.set <- read.table("X_train.txt", stringsAsFactors=FALSE)
+setwd("train")
+train.data <- read.table("X_train.txt", stringsAsFactors=FALSE)
 
 train.subject <- read.table("subject_train.txt", stringsAsFactors=FALSE)
 # add extra column called "group"
@@ -26,13 +24,13 @@ train.activity <- read.table("y_train.txt", stringsAsFactors=FALSE)
 names(train.activity) <- c("activity") 
 
 # add extra columns to train
-train <- cbind(train.subject, train.activity, train.set)
+train <- cbind(train.subject, train.activity, train.data)
 
 ################################################################################
 # loading data from test files and make single dataframe
 ################################################################################
-setwd("~/Dev/github/Coursera-Getting-and-Cleaning-Data/test")
-test.set <- read.table("X_test.txt", stringsAsFactors=FALSE)
+setwd("../test")
+test.data <- read.table("X_test.txt", stringsAsFactors=FALSE)
 
 test.subject <- read.table("subject_test.txt", stringsAsFactors=FALSE)
 # add extra column called "group"
@@ -43,10 +41,10 @@ test.activity <- read.table("y_test.txt", stringsAsFactors=FALSE)
 names(test.activity) <- c("activity")
 
 # add extra columns to training
-test<- cbind(test.subject, test.activity, test.set)
+test<- cbind(test.subject, test.activity, test.data)
 
 # finally, make one dataframe
-data <- rbind(test, train)
+merged <- rbind(test, train)
 
 # function to convert activity id to readable term.
 activity.id.to.strings <- function(x) {
@@ -54,19 +52,28 @@ activity.id.to.strings <- function(x) {
 }
 
 # change activity id to readable code.
-data$activity <- sapply(data$activity, activity.id.to.strings)
+merged$activity <- sapply(merged$activity, activity.id.to.strings)
 
-# extract mean(), std() columns from data
-mean.cols <- paste("V", grep("mean()", features$feature), sep="")
-std.cols <- paste("V", grep("std()", features$feature), sep="")
+# extract mean(), std() columns from merged
+colname.mean <- paste("V", grep("mean()", features$feature), sep="")
+colname.std <- paste("V", grep("std()", features$feature), sep="")
 
-# subset the data contained mean and std columns
-tidy.data <- data[,c("subject", "activity",  mean.cols, std.cols)]
+# subset the merged contained mean and std columns
+tidy <- merged[,c("subject", "activity",  colname.mean, colname.std)]
+
+# convert column names(like V1, V2) to human readble column names
+id.to.string <- function(x) {
+	with(features, features[id == gsub("V", "", x), "feature"])
+}
+colname.mean <- sapply(colname.mean, id.to.string)
+colname.std <- sapply(colname.std, id.to.string)
+colname.mean <- gsub("(^t|^f|\\(|\\))", "", colname.mean)
+colname.std <- gsub("(^t|^f|\\(|\\))", "", colname.std)
 
 # rename columns of tiny data
-names(tidy.data) <- c("person", "motion", mean.cols, std.cols)
+names(tidy) <- c("person", "motion", colname.mean, colname.std)
 
 # finally, make csv file
-tidy.data.melted <- melt(tidy.data, id=c("person", "motion"))
-tidy.data.mean <- dcast(tidy.data.melted, person + motion ~ variable, mean)
-write.csv(tidy.data.mean, "~/Dev/github/Coursera-Getting-and-Cleaning-Data/tidy.csv")
+tidy.melted <- melt(tidy, id=c("person", "motion"))
+tidy.mean <- dcast(tidy.melted, person + motion ~ variable, mean)
+write.csv(tidy.mean, "../tidy.csv")
