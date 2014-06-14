@@ -1,7 +1,7 @@
 library(plyr)
 library(reshape2)
 ################################################################################
-# load information files to dataframes
+# load files to use as variables names
 ################################################################################
 features <- read.table("features.txt", stringsAsFactors=FALSE)
 names(features) <- c("id", "feature")
@@ -10,13 +10,13 @@ names(activities) <- c("id", "activity")
 
 
 ################################################################################
-# loading data from train files and make single dataframe
+# Training Set
 ################################################################################
 setwd("train")
 train.data <- read.table("X_train.txt", stringsAsFactors=FALSE)
-
 train.subject <- read.table("subject_train.txt", stringsAsFactors=FALSE)
-# add extra column called "group"
+
+# add extra column and names as "group"
 train.subject <- cbind(1, train.subject)
 names(train.subject) <- c("group", "subject")
 
@@ -27,7 +27,7 @@ names(train.activity) <- c("activity")
 train <- cbind(train.subject, train.activity, train.data)
 
 ################################################################################
-# loading data from test files and make single dataframe
+# Test Set
 ################################################################################
 setwd("../test")
 test.data <- read.table("X_test.txt", stringsAsFactors=FALSE)
@@ -46,6 +46,9 @@ test<- cbind(test.subject, test.activity, test.data)
 # finally, make one dataframe
 merged <- rbind(test, train)
 
+################################################################################
+# Change activity id to human readable something.
+################################################################################
 # function to convert activity id to readable term.
 activity.id.to.strings <- function(x) {
     with(activities, activities[id == x, "activity"])
@@ -54,6 +57,9 @@ activity.id.to.strings <- function(x) {
 # change activity id to readable code.
 merged$activity <- sapply(merged$activity, activity.id.to.strings)
 
+################################################################################
+# Subset columns just need
+################################################################################
 # extract mean(), std() columns from merged
 colname.mean <- paste("V", grep("mean()", features$feature), sep="")
 colname.std <- paste("V", grep("std()", features$feature), sep="")
@@ -61,6 +67,9 @@ colname.std <- paste("V", grep("std()", features$feature), sep="")
 # subset the merged contained mean and std columns
 tidy <- merged[,c("subject", "activity",  colname.mean, colname.std)]
 
+################################################################################
+# Change features variables names to human readable something.
+################################################################################
 # convert column names(like V1, V2) to human readble column names
 id.to.string <- function(x) {
 	with(features, features[id == gsub("V", "", x), "feature"])
